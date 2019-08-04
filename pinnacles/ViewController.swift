@@ -17,13 +17,11 @@ class ViewController: UIViewController {
     let detailsView = UIView()
     let dismissButton = UIButton()
     let currentLocationButton = UIButton()
-    let speechButton = UIButton()
     
     let locationManager = CLLocationManager()
     let regionInMeters: Double = 10000
     let screenW = UIScreen.main.bounds.width
     let screenH = UIScreen.main.bounds.height
-    var counter = 0
     
     let detailsViewLabel: UILabel = {
         let label = UILabel()
@@ -43,7 +41,6 @@ class ViewController: UIViewController {
         detailsImgView.isHidden = true
         newDismissButton()
         newCurrentLocationButton()
-        newSpeechButton()
     }
     
     func centerViewOnUserLocation() {
@@ -156,6 +153,10 @@ extension ViewController: MKMapViewDelegate {
 //        }
     }
     
+    func mapView(_ mapView: MKMapView, regionDidChangeAnimated animated: Bool) {
+        
+    }
+    
     func mapView(_ mapView: MKMapView, didSelect view: MKAnnotationView) {
         print("The annotation was selected: \(String(describing: view.annotation?.title))")
         
@@ -259,31 +260,10 @@ extension ViewController: MKMapViewDelegate {
         dismissButton.addTarget(self, action: #selector(pinButtonClicked),
                                 for: .touchUpInside)
         
-        dismissButton.frame = CGRect(x: screenW/2-35, y: screenH-94,
+        dismissButton.frame = CGRect(x: screenW/2-35, y: screenH-104,
                                      width: 70, height: 94)
         
         self.view.addSubview(dismissButton)
-    }
-    
-    func newSpeechButton() {
-        speechButton.setBackgroundImage(UIImage(named: "bubble"),
-                                        for: UIControl.State.normal)
-        speechButton.addTarget(self, action: #selector(speechButtonClicked),
-                               for: .touchUpInside)
-        speechButton.setTitle("STOP POKING ME!!!\n\n",
-                              for: UIControl.State.normal)
-        speechButton.setTitleColor(UIColor.black,
-                                   for: UIControl.State.normal)
-        speechButton.titleLabel?.numberOfLines = 3
-        speechButton.titleLabel?.font = UIFont.systemFont(ofSize: 22)
-        speechButton.titleLabel?.textAlignment = .center
-        
-        self.speechButton.frame = CGRect(x: self.screenW/2-109,
-                                         y: self.screenH+300,
-                                         width: 218, height: 200)
-        counter = 0
-        
-        self.view.addSubview(speechButton)
     }
 
 /****************************************************************************************************************/
@@ -292,7 +272,7 @@ extension ViewController: MKMapViewDelegate {
         let w = img.size.width
         let h = img.size.height
         
-        if (small) {
+        if small {
             let newH = (50/w)*h
             return img.resize(x: 0, y: 0, w: 50, h: newH)
         }
@@ -320,7 +300,9 @@ extension ViewController: MKMapViewDelegate {
         
         self.view.addSubview(detailsImgView)
         
-        // attempt to add in swipe up on image to dismiss
+//        this will animate details view immediately on tap, rather than tap again
+//        animateDetailsView()
+        
         let swipeDown = UISwipeGestureRecognizer(target: self,
                                                  action: #selector(dismissDetailsView))
         swipeDown.direction = UISwipeGestureRecognizer.Direction.down
@@ -333,8 +315,6 @@ extension ViewController: MKMapViewDelegate {
         let w = detailsImgView.image?.size.width ?? 50
         let h = detailsImgView.image?.size.height ?? 50
         let newH = (screenW*h)/w
-        
-        
 
         UIView.animate(withDuration: 0.3, delay: 0.0,
                        options: UIView.AnimationOptions.curveEaseOut, animations: {
@@ -387,52 +367,19 @@ extension ViewController: MKMapViewDelegate {
     }
     
     @objc func pinButtonClicked() {
-        if(dismissButton.frame.origin.y < screenH-94) {
+        if dismissButton.frame.origin.y < screenH-104 {
             dismissDetailsView()
         } else {
-            if(counter < 2) {
-                self.animatePin()
-                counter += 1
-                return
-            }
-            UIView.animate(withDuration: 0.5, delay: 0.0,
-                           options: UIView.AnimationOptions.curveEaseOut, animations: {
-                    self.dismissButton.frame = CGRect(x: self.screenW/2-35,
-                                                      y: self.screenH+100,
-                                                      width: 70, height: 94)
-            }, completion: {(finished:Bool) in
-                UIView.animate(withDuration: 0.5, delay: 0.0,
-                               options: UIView.AnimationOptions.curveEaseOut, animations: {
-                    self.speechButton.frame = CGRect(x: self.screenW/2-109,
-                                                     y: self.screenH-225,
-                                                     width: 218, height: 200)
-                    self.speechButton.alpha = 1.0
-                    
-                })
-            })
+            bounce(obj: dismissButton, up: 10, left: 0)
         }
-    }
-    
-    @objc func speechButtonClicked() {
-        UIView.animate(withDuration: 0.5, delay: 0.0,
-                       options: UIView.AnimationOptions.curveEaseOut, animations: {
-            self.speechButton.frame = CGRect(x: self.screenW/2-109,
-                                             y: self.screenH+300,
-                                             width: 218, height: 200)
-            self.speechButton.alpha = 0.0
-        }, completion: {(finished:Bool) in
-            self.animatePin()
-            self.counter = 0
-        })
     }
     
     @objc func dismissDetailsView() {
         let w = detailsImgView.image?.size.width ?? 50
         let h = detailsImgView.image?.size.height ?? 50
         let newH = (screenW*h)/w
-        self.counter = 0
         
-        UIView.animate(withDuration: 0.5, delay: 0.0,
+        UIView.animate(withDuration: 0.4, delay: 0.0,
                        options: UIView.AnimationOptions.curveEaseOut, animations: {
             self.detailsImgView.frame = CGRect(x: 0, y: self.screenH,
                                                width: self.screenW,
@@ -443,25 +390,36 @@ extension ViewController: MKMapViewDelegate {
             self.dismissButton.frame = CGRect(x: self.screenW/2-35,
                                               y: newH+self.screenH-35,
                                               width: 70, height: 94)
-            
-            // free(self.detailsView)
         }, completion: {(finished:Bool) in
             self.detailsImgView.isHidden = true
             self.animatePin()
         })
-        speechButtonClicked()
     }
     
     func animatePin() {
-        UIView.animate(withDuration: 0.15, animations: {
+        UIView.animate(withDuration: 0.25, delay: 0.0,
+                       options: UIView.AnimationOptions.curveEaseOut, animations: {
             self.dismissButton.frame = CGRect(x: self.screenW/2-35,
                                               y: self.screenH-104,
                                               width: 70, height: 94)
         }, completion: {(finished:Bool) in
+            self.bounce(obj: self.dismissButton, up: -10, left: 0)
+        })
+    }
+
+    func bounce(obj: UIView, up: CGFloat, left: CGFloat) {
+        let curX = obj.frame.origin.x
+        let curY = obj.frame.origin.y
+        let curW = obj.frame.size.width
+        let curH = obj.frame.size.height
+        
+        UIView.animate(withDuration: 0.15, animations: {
+            obj.frame = CGRect(x: curX-left, y: curY-up,
+                                              width: curW, height: curH)
+        }, completion: {(finished:Bool) in
             UIView.animate(withDuration: 0.15, animations: {
-                self.dismissButton.frame = CGRect(x: self.screenW/2-35,
-                                                  y: self.screenH-94,
-                                                  width: 70, height: 94)
+                obj.frame = CGRect(x: curX, y: curY,
+                                                  width: curW, height: curH)
             })
         })
     }
@@ -490,12 +448,12 @@ extension UIView {
             view.translatesAutoresizingMaskIntoConstraints = false
         }
         
-        if (hor != "") {
+        if hor != "" {
             addConstraints(NSLayoutConstraint.constraints(withVisualFormat: hor,
                                                           options: NSLayoutConstraint.FormatOptions(),
                                                           metrics: nil, views: viewsDictionary))
         }
-        if (vert != "") {
+        if vert != "" {
             addConstraints(NSLayoutConstraint.constraints(withVisualFormat: vert,
                                                           options: NSLayoutConstraint.FormatOptions(),
                                                           metrics: nil, views: viewsDictionary))
@@ -546,7 +504,6 @@ extension UIView {
  - Both tall and long images are bad for us, in both the
    map view and the detail view as the become too big or
    too small respectively
- -
 */
 
 /*      Things to still add:
