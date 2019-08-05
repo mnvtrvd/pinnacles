@@ -15,9 +15,16 @@ class ViewController: UIViewController {
     
     let detailsImgView = UIImageView()
     let detailsView = UIView()
-    let dismissButtonColor = UIImageView()
-    let dismissButton = UIButton()
+    let homeButtonColor = UIImageView()
+    let homeButton = UIButton()
     let currentLocationButton = UIButton()
+    let newPinButton = UIButton()
+    let cameraButton = UIButton()
+    let profileButton = UIButton()
+    let settingsButton = UIButton()
+    
+    var menuButtons = [UIButton]()
+    var menuOpen = false
     
     let locationManager = CLLocationManager()
     let regionInMeters: Double = 10000
@@ -42,9 +49,13 @@ class ViewController: UIViewController {
         checkLocationServices()
         
         detailsImgView.isHidden = true
-        newDismissButton()
+        newhomeButton()
         newCurrentLocationButton()
-        rainbow(view: dismissButtonColor, duration: 2)
+        newMenu()
+        rainbow(views: homeButtonColor, newPinButton,
+                       cameraButton, profileButton,
+                       settingsButton,
+                duration: 2)
     }
     
     func centerViewOnUserLocation() {
@@ -230,7 +241,7 @@ extension ViewController: MKMapViewDelegate {
         currentLocationButton.addTarget(self, action: #selector(centerOnLocation),
                                         for: .touchUpInside)
         
-        currentLocationButton.frame = CGRect(x: screenW-75, y: screenH-75,
+        currentLocationButton.frame = CGRect(x: screenW-75, y: 50,
                                              width: 50, height: 50)
         
         self.view.addSubview(currentLocationButton)
@@ -262,25 +273,92 @@ extension ViewController: MKMapViewDelegate {
         self.view.bringSubviewToFront(self.detailsImgView)
     }
     
-    func newDismissButton() {
-        dismissButton.setBackgroundImage(UIImage(named: "homePin"),
+    func newhomeButton() {
+        homeButton.setBackgroundImage(UIImage(named: "homePin"),
                                          for: UIControl.State.normal)
-        dismissButtonColor.image = UIImage(named: "homePinColor")
+        homeButtonColor.image = UIImage(named: "homePinColor")
         
-        dismissButton.tintColor = .white
-        dismissButtonColor.tintColor = .red
-        
-        dismissButton.addTarget(self, action: #selector(pinButtonClicked),
-                                for: .touchUpInside)
-        
+        homeButton.tintColor = .white
+        homeButtonColor.tintColor = .red
+
         let homeFrame = CGRect(x: screenW/2-35, y: screenH-114,
                                width: 70, height: 94)
         self.applyHomeFrame(frame: homeFrame)
         
-        self.view.addSubview(dismissButtonColor)
-        self.view.addSubview(dismissButton)
+        homeButton.addTarget(self, action: #selector(pinButtonClicked),
+                                for: .touchUpInside)
+        
+        self.view.addSubview(homeButtonColor)
+        self.view.addSubview(homeButton)
+    }
+    
+    func newNewPinButton() {
+        newPinButton.setBackgroundImage(UIImage(named: "circle-outline"), for: UIControl.State.normal)
+        newPinButton.alpha = 0.0
+        newPinButton.tintColor = .red
+        
+        newPinButton.frame = CGRect(x: screenW/2-15, y: screenH-94,
+                                    width: 30, height: 30)
+
+        newPinButton.addTarget(self, action: #selector(menuButtonClicked),
+                             for: .touchUpInside)
+        
+        menuButtons.append(newPinButton)
+        self.view.addSubview(newPinButton)
     }
 
+    func newCameraButton() {
+        cameraButton.setBackgroundImage(UIImage(named: "circle-outline"), for: UIControl.State.normal)
+        cameraButton.alpha = 0.0
+        cameraButton.tintColor = .red
+        
+        cameraButton.frame = CGRect(x: screenW/2-15, y: screenH-94,
+                                    width: 30, height: 30)
+        
+        cameraButton.addTarget(self, action: #selector(menuButtonClicked),
+                             for: .touchUpInside)
+        
+        menuButtons.append(cameraButton)
+        self.view.addSubview(cameraButton)
+    }
+
+    func newProfileButton() {
+        profileButton.setBackgroundImage(UIImage(named: "circle-outline"), for: UIControl.State.normal)
+        profileButton.alpha = 0.0
+        profileButton.tintColor = .red
+        
+        profileButton.frame = CGRect(x: screenW/2-15, y: screenH-94,
+                                    width: 30, height: 30)
+
+        profileButton.addTarget(self, action: #selector(menuButtonClicked),
+                             for: .touchUpInside)
+        
+        menuButtons.append(profileButton)
+        self.view.addSubview(profileButton)
+    }
+    
+    func newSettingsButton() {
+        settingsButton.setBackgroundImage(UIImage(named: "circle-outline"), for: UIControl.State.normal)
+        settingsButton.alpha = 0.0
+        settingsButton.tintColor = .red
+        
+        settingsButton.frame = CGRect(x: screenW/2-15, y: screenH-94,
+                                    width: 30, height: 30)
+        
+        settingsButton.addTarget(self, action: #selector(menuButtonClicked),
+                             for: .touchUpInside)
+        
+        menuButtons.append(settingsButton)
+        self.view.addSubview(settingsButton)
+    }
+    
+    func newMenu() {
+        newNewPinButton()
+        newCameraButton()
+        newProfileButton()
+        newSettingsButton()
+    }
+    
 /****************************************************************************************************************/
     
     func resizeImg(img: UIImage, small: Bool) -> UIImage {
@@ -321,20 +399,23 @@ extension ViewController: MKMapViewDelegate {
 /****************************************************************************************************************/
     
     @objc func animateDetailsView() {
+        dismissMenu()
+        
         if let w = detailsImgView.image?.size.width {
             if let h = detailsImgView.image?.size.height {
                 let newH = (screenW*h)/w
 //                curPin.isEnabled = false
+//                curPin.isHidden = true
 
                 UIView.animate(withDuration: 0.3, delay: 0.0,
                                options: UIView.AnimationOptions.curveEaseOut, animations: {
                     self.detailsImgView.frame = CGRect(x: 0, y: 0, width: self.screenW, height: newH)
-                    self.dismissButton.alpha = 0.0
-                    self.dismissButtonColor.alpha = 0.0
+                    self.homeButton.alpha = 0.0
+                    self.homeButtonColor.alpha = 0.0
                 }, completion: {(finished:Bool) in
                     self.newDetailsView()
-                    self.newDismissButton()
-                    self.detailsView.frame = CGRect(x: 0, y: -(self.screenH - newH),
+                    self.newhomeButton()
+                    self.detailsView.frame = CGRect(x: 0, y: newH - self.screenH,
                                                     width: self.screenW,
                                                     height: self.screenH - newH)
                     
@@ -346,27 +427,15 @@ extension ViewController: MKMapViewDelegate {
                     self.bounce(obj: self.detailsImgView, up: -5, left: 0)
                     UIView.animate(withDuration: 0.3, delay: 0.0,
                                    options: UIView.AnimationOptions.curveEaseOut, animations: {
-                        self.detailsView.frame = CGRect(x: 0, y: newH,
-                                                        width: self.screenW,
-                                                        height: self.screenH - newH)
+                        self.translate(obj: self.detailsView, up: -self.screenH, left: 0)
                     }, completion: {(finished:Bool) in
-                        self.fade(obj: self.dismissButton, duration: 0.5)
-                        self.fade(obj: self.dismissButtonColor, duration: 0.5)
+                        self.fade(obj: self.homeButton, duration: 0.5)
+                        self.fade(obj: self.homeButtonColor, duration: 0.5)
                         self.bounce(obj: self.detailsView, up: 10, left: 0)
                     })
                 })
             }
         }
-    }
-    
-    @objc func pinButtonClicked() {
-        if dismissButton.frame.origin.y < screenH-114 {
-            dismissDetailsView()
-        } else {
-            bounce(obj: dismissButton, up: 10, left: 0)
-            bounce(obj: dismissButtonColor, up: 10, left: 0)
-        }
-        rainbow(view: dismissButtonColor, duration: 2)
     }
     
     @objc func dismissDetailsView() {
@@ -375,15 +444,12 @@ extension ViewController: MKMapViewDelegate {
                 let newH = (screenW*h)/w
         
 //                curPin.isEnabled = true
+//                curPin.isHidden = false
                 
                 UIView.animate(withDuration: 0.4, delay: 0.0,
                                options: UIView.AnimationOptions.curveEaseOut, animations: {
-                    self.detailsImgView.frame = CGRect(x: 0, y: self.screenH,
-                                                       width: self.screenW,
-                                                       height: newH)
-                    self.detailsView.frame = CGRect(x: 0, y: newH+self.screenH,
-                                                    width: self.screenW,
-                                                    height: self.screenH - newH)
+                    self.translate(obj: self.detailsImgView, up: -self.screenH, left: 0)
+                    self.translate(obj: self.detailsView, up: -self.screenH, left: 0)
                                 
                     let homeFrame = CGRect(x: self.screenW/2-35,
                                            y: newH+self.screenH-35,
@@ -397,6 +463,26 @@ extension ViewController: MKMapViewDelegate {
         }
     }
     
+    @objc func pinButtonClicked() {
+        if homeButton.frame.origin.y < screenH-114 {
+            dismissDetailsView()
+        } else {
+            bounce(obj: homeButton, up: 10, left: 0)
+            bounce(obj: homeButtonColor, up: 10, left: 0)
+            if menuOpen {
+                dismissMenu()
+                return
+            } else {
+                animateMenu()
+            }
+        }
+        rainbow(views: homeButtonColor, newPinButton,
+                cameraButton, profileButton,
+                settingsButton,
+                duration: 2)
+    }
+    
+    
     func animatePin() {
         UIView.animate(withDuration: 0.25, delay: 0.0,
                        options: UIView.AnimationOptions.curveEaseOut, animations: {
@@ -405,16 +491,58 @@ extension ViewController: MKMapViewDelegate {
                                width: 70, height: 94)
             self.applyHomeFrame(frame: frame)
         }, completion: {(finished:Bool) in
-            self.bounce(obj: self.dismissButton, up: -10, left: 0)
-            self.bounce(obj: self.dismissButtonColor, up: -10, left: 0)
+            self.bounce(obj: self.homeButton, up: -10, left: 0)
+            self.bounce(obj: self.homeButtonColor, up: -10, left: 0)
         })
+    }
+    
+    func animateMenu() {
+        var index = 0.0
+        for button in menuButtons {
+            UIView.animate(withDuration: 0.25, animations: {
+                let deltaX = 80*cos(index*Double.pi/Double(self.menuButtons.count - 1))
+                let deltaY = 80*sin(index*Double.pi/Double(self.menuButtons.count - 1))
+                
+                button.alpha = 1.0
+                button.frame = CGRect(x: self.screenW/2-25-CGFloat(deltaX),
+                                      y: self.screenH-94-CGFloat(deltaY),
+                                      width: 50, height: 50)
+            })
+            index += 1.0
+        }
+        menuOpen = true
+    }
+    
+    func dismissMenu() {
+        for button in menuButtons {
+            UIView.animate(withDuration: 0.25, animations: {
+                button.alpha = 0.0
+                button.frame = CGRect(x: self.screenW/2-15, y: self.screenH-94,
+                                      width: 30, height: 30)
+            })
+        }
+        menuOpen = false
+    }
+    
+    @objc func menuButtonClicked() {
+        dismissMenu()
     }
     
 /****************************************************************************************************************/
     
     func applyHomeFrame(frame: CGRect) {
-        dismissButton.frame = frame
-        dismissButtonColor.frame = frame
+        homeButton.frame = frame
+        homeButtonColor.frame = frame
+    }
+    
+    func translate(obj: UIView, up: CGFloat, left: CGFloat) {
+        let curX = obj.frame.origin.x
+        let curY = obj.frame.origin.y
+        let curW = obj.frame.size.width
+        let curH = obj.frame.size.height
+        
+        obj.frame = CGRect(x: curX-left, y: curY-up,
+                           width: curW, height: curH)
     }
     
     func bounce(obj: UIView, up: CGFloat, left: CGFloat) {
@@ -442,30 +570,32 @@ extension ViewController: MKMapViewDelegate {
         }
     }
     
-    func rainbow(view: UIView, duration: Double) {
-        UIView.animate(withDuration: duration, animations: {
-            view.tintColor = UIColor(red: 1, green: 1, blue: 0, alpha: 1.0)
-        }, completion: {(finished:Bool) in
+    func rainbow(views: UIView..., duration: Double) {
+        for view in views {
             UIView.animate(withDuration: duration, animations: {
-                view.tintColor = UIColor(red: 0, green: 1, blue: 0, alpha: 1.0)
+                view.tintColor = UIColor(red: 1, green: 1, blue: 0, alpha: 1.0)
             }, completion: {(finished:Bool) in
                 UIView.animate(withDuration: duration, animations: {
-                    view.tintColor = UIColor(red: 0, green: 1, blue: 1, alpha: 1.0)
+                    view.tintColor = UIColor(red: 0, green: 1, blue: 0, alpha: 1.0)
                 }, completion: {(finished:Bool) in
                     UIView.animate(withDuration: duration, animations: {
-                        view.tintColor = UIColor(red: 0, green: 0, blue: 1, alpha: 1.0)
+                        view.tintColor = UIColor(red: 0, green: 1, blue: 1, alpha: 1.0)
                     }, completion: {(finished:Bool) in
                         UIView.animate(withDuration: duration, animations: {
-                            view.tintColor = UIColor(red: 1, green: 0, blue: 1, alpha: 1.0)
+                            view.tintColor = UIColor(red: 0, green: 0, blue: 1, alpha: 1.0)
                         }, completion: {(finished:Bool) in
                             UIView.animate(withDuration: duration, animations: {
-                                view.tintColor = UIColor(red: 1, green: 0, blue: 0, alpha: 1.0)
+                                view.tintColor = UIColor(red: 1, green: 0, blue: 1, alpha: 1.0)
+                            }, completion: {(finished:Bool) in
+                                UIView.animate(withDuration: duration, animations: {
+                                    view.tintColor = UIColor(red: 1, green: 0, blue: 0, alpha: 1.0)
+                                })
                             })
                         })
                     })
                 })
             })
-        })
+        }
     }
 }
 
@@ -536,7 +666,9 @@ extension UIView {
  - If region is your location, the button will be blue,
    otherwise gray
  - "Home" pin does tiny animation evertime its clicked
-  - Deselect annotations when panning
+ - Deselect annotations when panning
+ - Tapping on the home pin provides options to add
+   new pins, upload/take pics, etc.
  */
 
 /*      Issues:
@@ -559,8 +691,6 @@ extension UIView {
  - If UIView completely scrolled through, if the user
    scrolls more, the detail view will animate out of
    view in direction of scrolling
- - Tapping on the home pin provides options to add
-   new pins, upload/take pics, etc.
  - Slightly dragging up on the home pin opens the
    drawer view, when drawer view is open, the pin
    will hide behind the drawer and swiping up again
