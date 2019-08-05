@@ -34,6 +34,7 @@ class ViewController: UIViewController {
     let screenH = UIScreen.main.bounds.height
     
     var curPin = MKAnnotationView()
+    var openView = false
     
     let detailsViewLabel: UILabel = {
         let label = UILabel()
@@ -162,7 +163,10 @@ extension ViewController: MKMapViewDelegate {
     }
     
     func mapView(_ mapView: MKMapView, regionDidChangeAnimated animated: Bool) {
-        
+        if openView {
+            expandImg(pin: curPin)
+            openView = false
+        }
     }
     
     // when pin is clicked, the region is zoomed and centered to it, then clickable image is
@@ -170,18 +174,18 @@ extension ViewController: MKMapViewDelegate {
     func mapView(_ mapView: MKMapView, didSelect view: MKAnnotationView) {
         if let pinLoc = view.annotation?.coordinate {
             curPin = view
-            let region = MKCoordinateRegion.init(center: pinLoc,
-                                                 latitudinalMeters: mapView.region.center.latitude*50,
-                                                 longitudinalMeters: mapView.region.center.latitude*50)
+            if ((pinLoc.latitude != mapView.region.center.latitude) &&
+                (pinLoc.longitude != mapView.region.center.longitude)) {
+                let region = MKCoordinateRegion.init(center: pinLoc,
+                                                     latitudinalMeters: mapView.region.center.latitude*50,
+                                                     longitudinalMeters: mapView.region.center.latitude*50)
             
-            mapView.setRegion(region, animated: true)
-            
-            UIView.animate(withDuration: 0.3, delay: 0.0,
-                           options: UIView.AnimationOptions.curveLinear, animations: {
-                
-            }, completion: {(finished:Bool) in
-                self.expandImg(pin: view)
-            })
+                mapView.setRegion(region, animated: true)
+                openView = true
+            }
+            else {
+                expandImg(pin: curPin)
+            }
         }
     }
     
@@ -250,9 +254,6 @@ extension ViewController: MKMapViewDelegate {
         detailsImgView.contentMode = .scaleAspectFill
         detailsImgView.clipsToBounds = true
         detailsImgView.isHidden = false
-        
-        detailsImgView.addGestureRecognizer(UITapGestureRecognizer(target: self,
-                                                                   action: #selector(animateDetailsView)))
         
         let swipeDown = UISwipeGestureRecognizer(target: self,
                                                  action: #selector(dismissDetailsView))
@@ -387,8 +388,8 @@ extension ViewController: MKMapViewDelegate {
                 
                 self.view.addSubview(detailsImgView)
                 
-        //        this will animate details view immediately on tap, rather than tap again
-        //        animateDetailsView()
+                // this will animate details view immediately on tap, rather than tap again
+                animateDetailsView()
             }
         }
     }
@@ -475,7 +476,7 @@ extension ViewController: MKMapViewDelegate {
                 
                 button.alpha = 1.0
                 button.frame = CGRect(x: self.screenW/2-25-CGFloat(deltaX),
-                                      y: self.screenH-94-CGFloat(deltaY),
+                                      y: self.screenH-104-CGFloat(deltaY),
                                       width: 50, height: 50)
             })
             index += 1.0
@@ -648,13 +649,9 @@ extension UIView {
    is relative
  - If pin image exists, it will be displayed, otherwise
    default pin is displayed
- - Tapping on a pin, centers and zooms view to the pin
- - If you move away from the pin, the image will be
-   disabled so there isn't a random image hanging
-   around on the screen
- - Tapping on pin again opens up detail view, the image
-   will move to the top and grow until width is the same
-   of the screen's
+ - Tapping on a pin, centers and zooms view to the pin,
+   and then the image will move to the top and grow until
+   width is the same of the screen's, with height matching
  - Detail view text slides out of the image, this is
    currently a UIView that can just function as a
    container view for all the details later
@@ -668,16 +665,25 @@ extension UIView {
    location
  - If region is your location, the button will be blue,
    otherwise gray
- - "Home" pin does tiny animation evertime its clicked
- - Deselect annotations when panning
+ - "Home" pin does bounce animation evertime its clicked
  - Tapping on the home pin provides options to add
    new pins, upload/take pics, etc.
+ - Trigger image after animation complete
+ - Pin is a template image which has a rainbow effect
+   on the tint of the image
+ - Tapping on the image will hide/show the menu options,
+   which animate from within the pin in a semi-circular
+   pattern
+ - Tint of the menu buttons matches that of the pin
+ - Menu is versatile in that if the number of menu
+   buttons changes, the spacing and position will match
+ - If any menu button is clicked, the menu will close
  */
 
 /*      Issues:
  - Image gets completely blown out when enlarged
- - Trigger image after animation complete
- - Disable pin while image is active
+ - Deselect annotations when panning (not regionWill/DidChange)
+ - Hide pin while image is active
  - Blue dot disappeared
  - Both tall and long images are bad for us, in both the
    map view and the detail view as the become too big or
@@ -687,6 +693,7 @@ extension UIView {
 /*      Things to still add:
  - Add pins to map view
  - Expand on the detail view
+ - Add functionality to menu buttons
  - Dynamically swipe and move detail view
 */
 
