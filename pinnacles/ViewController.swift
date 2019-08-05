@@ -15,6 +15,7 @@ class ViewController: UIViewController {
     
     let detailsImgView = UIImageView()
     let detailsView = UIView()
+    let dismissButtonColor = UIImageView()
     let dismissButton = UIButton()
     let currentLocationButton = UIButton()
     
@@ -22,6 +23,8 @@ class ViewController: UIViewController {
     let regionInMeters: Double = 10000
     let screenW = UIScreen.main.bounds.width
     let screenH = UIScreen.main.bounds.height
+    
+    var curPin = MKAnnotationView()
     
     let detailsViewLabel: UILabel = {
         let label = UILabel()
@@ -41,6 +44,7 @@ class ViewController: UIViewController {
         detailsImgView.isHidden = true
         newDismissButton()
         newCurrentLocationButton()
+        rainbow(view: dismissButtonColor, duration: 2)
     }
     
     func centerViewOnUserLocation() {
@@ -50,8 +54,7 @@ class ViewController: UIViewController {
                                                  longitudinalMeters: regionInMeters)
             mapView.setRegion(region, animated: true)
             
-            self.currentLocationButton.setBackgroundImage(UIImage(named: "currentLocationEnabled"),
-                                                          for: UIControl.State.normal)
+            self.currentLocationButton.tintColor = UIColor(red: 0, green: 0.75, blue: 1, alpha: 1.0)
         }
     }
     
@@ -144,13 +147,10 @@ extension ViewController: MKMapViewDelegate {
         // make image hidden if the user isn't going to click on it for detail view
         detailsImgView.isHidden = true
         
-        self.currentLocationButton.setBackgroundImage(UIImage(named: "currentLocationDisabled"),
-                                                      for: UIControl.State.normal)
+        self.currentLocationButton.tintColor = .lightGray
         
         // attempt to deselect annotations if panning
-//        for pin in mapView.selectedAnnotations as [MKAnnotation] {
-//            deselectAnnotation(annotation:pin, animated:true)
-//        }
+        curPin.isSelected = false
     }
     
     func mapView(_ mapView: MKMapView, regionDidChangeAnimated animated: Bool) {
@@ -165,9 +165,11 @@ extension ViewController: MKMapViewDelegate {
                                                  latitudinalMeters: mapView.region.center.latitude*50,
                                                  longitudinalMeters: mapView.region.center.latitude*50)
             
+            mapView.setRegion(region, animated: true)
+            
             UIView.animate(withDuration: 0.3, delay: 0.0,
                            options: UIView.AnimationOptions.curveLinear, animations: {
-                mapView.setRegion(region, animated: true)
+                
             }, completion: {(finished:Bool) in
                 self.expandImg(pin: view)
             })
@@ -222,8 +224,9 @@ extension ViewController: MKMapViewDelegate {
     
     func newCurrentLocationButton() {
         currentLocationButton.alpha = 1.0
-        currentLocationButton.setBackgroundImage(UIImage(named: "currentLocationEnabled"),
+        currentLocationButton.setBackgroundImage(UIImage(named: "currentLocation"),
                                                  for: UIControl.State.normal)
+        self.currentLocationButton.tintColor = UIColor(red: 0, green: 0.75, blue: 1, alpha: 1.0)
         currentLocationButton.addTarget(self, action: #selector(centerOnLocation),
                                         for: .touchUpInside)
         
@@ -241,6 +244,11 @@ extension ViewController: MKMapViewDelegate {
         
         detailsImgView.addGestureRecognizer(UITapGestureRecognizer(target: self,
                                                                    action: #selector(animateDetailsView)))
+        
+        let swipeDown = UISwipeGestureRecognizer(target: self,
+                                                 action: #selector(dismissDetailsView))
+        swipeDown.direction = UISwipeGestureRecognizer.Direction.down
+        self.view.addGestureRecognizer(swipeDown)
     }
     
     func newDetailsView() {
@@ -255,14 +263,21 @@ extension ViewController: MKMapViewDelegate {
     }
     
     func newDismissButton() {
-        dismissButton.setBackgroundImage(UIImage(named: "defaultPin"),
+        dismissButton.setBackgroundImage(UIImage(named: "homePin"),
                                          for: UIControl.State.normal)
+        dismissButtonColor.image = UIImage(named: "homePinColor")
+        
+        dismissButton.tintColor = .white
+        dismissButtonColor.tintColor = .red
+        
         dismissButton.addTarget(self, action: #selector(pinButtonClicked),
                                 for: .touchUpInside)
         
-        dismissButton.frame = CGRect(x: screenW/2-35, y: screenH-104,
-                                     width: 70, height: 94)
+        let homeFrame = CGRect(x: screenW/2-35, y: screenH-114,
+                               width: 70, height: 94)
+        self.applyHomeFrame(frame: homeFrame)
         
+        self.view.addSubview(dismissButtonColor)
         self.view.addSubview(dismissButton)
     }
 
@@ -277,7 +292,6 @@ extension ViewController: MKMapViewDelegate {
             return img.resize(x: 0, y: 0, w: 50, h: newH)
         }
         
-        let screenW = UIScreen.main.bounds.width
         let newH = (screenW/w)*h
         return img.resize(x: 0, y: 0, w: screenW, h: newH)
     }
@@ -287,126 +301,122 @@ extension ViewController: MKMapViewDelegate {
     }
 
     func expandImg(pin: MKAnnotationView) {
-        let centerX = screenW/2
-        let centerY = screenH/2
-        let w = pin.image?.size.width ?? 50
-        let h = pin.image?.size.height ?? 50
-
-        newDetailsImgView()
-        detailsImgView.frame = CGRect(x: centerX - w/2,
-                                      y: centerY - h/2 + 5,
-                                      width: w, height: h)
-        detailsImgView.image = pin.image
-        
-        self.view.addSubview(detailsImgView)
-        
-//        this will animate details view immediately on tap, rather than tap again
-//        animateDetailsView()
-        
-        let swipeDown = UISwipeGestureRecognizer(target: self,
-                                                 action: #selector(dismissDetailsView))
-        swipeDown.direction = UISwipeGestureRecognizer.Direction.down
-        self.view.addGestureRecognizer(swipeDown)
+        if let w = pin.image?.size.width {
+            if let h = pin.image?.size.height {
+                newDetailsImgView()
+                detailsImgView.frame = CGRect(x: (screenW - w)/2,
+                                              y: (screenH - h)/2 + 5,
+                                              width: w, height: h)
+                detailsImgView.image = pin.image
+                
+                curPin = pin
+                self.view.addSubview(detailsImgView)
+                
+        //        this will animate details view immediately on tap, rather than tap again
+        //        animateDetailsView()
+            }
+        }
     }
 
 /****************************************************************************************************************/
     
     @objc func animateDetailsView() {
-        let w = detailsImgView.image?.size.width ?? 50
-        let h = detailsImgView.image?.size.height ?? 50
-        let newH = (screenW*h)/w
+        if let w = detailsImgView.image?.size.width {
+            if let h = detailsImgView.image?.size.height {
+                let newH = (screenW*h)/w
+//                curPin.isEnabled = false
 
-        UIView.animate(withDuration: 0.3, delay: 0.0,
-                       options: UIView.AnimationOptions.curveEaseOut, animations: {
-            self.detailsImgView.frame = CGRect(x: 0, y: 0, width: self.screenW, height: newH)
-            self.dismissButton.alpha = 0.0
-        }, completion: {(finished:Bool) in
-            self.newDetailsView()
-            self.newDismissButton()
-            self.detailsView.frame = CGRect(x: 0, y: -(self.screenH - newH),
-                                            width: self.screenW,
-                                            height: self.screenH - newH)
-            self.dismissButton.frame = CGRect(x: self.screenW/2-35,
-                                              y: newH-35,
-                                              width: 70, height: 94)
-            UIView.animate(withDuration: 0.1, animations: {
-                self.detailsImgView.frame = CGRect(x: 0, y: 5,
-                                                   width: self.screenW,
-                                                   height: newH)
-            }, completion: {(finished:Bool) in
-                UIView.animate(withDuration: 0.1, animations: {
-                    self.detailsImgView.frame = CGRect(x: 0, y: 0,
-                                                       width: self.screenW,
-                                                       height: newH)
-                })
-            })
-            UIView.animate(withDuration: 0.5, delay: 0.0,
-                           options: UIView.AnimationOptions.curveEaseOut, animations: {
-                self.detailsView.frame = CGRect(x: 0, y: newH,
-                                                width: self.screenW,
-                                                height: self.screenH - newH)
-            }, completion: {(finished:Bool) in
-                UIView.animate(withDuration: 0.3, animations: {
-                    self.detailsView.frame = CGRect(x: 0, y: newH-10,
+                UIView.animate(withDuration: 0.3, delay: 0.0,
+                               options: UIView.AnimationOptions.curveEaseOut, animations: {
+                    self.detailsImgView.frame = CGRect(x: 0, y: 0, width: self.screenW, height: newH)
+                    self.dismissButton.alpha = 0.0
+                    self.dismissButtonColor.alpha = 0.0
+                }, completion: {(finished:Bool) in
+                    self.newDetailsView()
+                    self.newDismissButton()
+                    self.detailsView.frame = CGRect(x: 0, y: -(self.screenH - newH),
                                                     width: self.screenW,
                                                     height: self.screenH - newH)
-                    self.dismissButton.alpha = 1.0
-                }, completion: {(finished:Bool) in
-                    UIView.animate(withDuration: 0.15, animations: {
+                    
+                    let homeFrame = CGRect(x: self.screenW/2-35,
+                                           y: newH-35,
+                                           width: 70, height: 94)
+                    self.applyHomeFrame(frame: homeFrame)
+                    
+                    self.bounce(obj: self.detailsImgView, up: -5, left: 0)
+                    UIView.animate(withDuration: 0.3, delay: 0.0,
+                                   options: UIView.AnimationOptions.curveEaseOut, animations: {
                         self.detailsView.frame = CGRect(x: 0, y: newH,
                                                         width: self.screenW,
                                                         height: self.screenH - newH)
+                    }, completion: {(finished:Bool) in
+                        self.fade(obj: self.dismissButton, duration: 0.5)
+                        self.fade(obj: self.dismissButtonColor, duration: 0.5)
+                        self.bounce(obj: self.detailsView, up: 10, left: 0)
                     })
                 })
-            })
-        })
-        
-        // attempt to fix the image quality issue
-//        guard let tempImg = detailsImgView.image else { return }
-//        resizeImg(img: tempImg, small: false)
-    }
-    
-    @objc func pinButtonClicked() {
-        if dismissButton.frame.origin.y < screenH-104 {
-            dismissDetailsView()
-        } else {
-            bounce(obj: dismissButton, up: 10, left: 0)
+            }
         }
     }
     
+    @objc func pinButtonClicked() {
+        if dismissButton.frame.origin.y < screenH-114 {
+            dismissDetailsView()
+        } else {
+            bounce(obj: dismissButton, up: 10, left: 0)
+            bounce(obj: dismissButtonColor, up: 10, left: 0)
+        }
+        rainbow(view: dismissButtonColor, duration: 2)
+    }
+    
     @objc func dismissDetailsView() {
-        let w = detailsImgView.image?.size.width ?? 50
-        let h = detailsImgView.image?.size.height ?? 50
-        let newH = (screenW*h)/w
+        if let w = detailsImgView.image?.size.width {
+            if let h = detailsImgView.image?.size.height {
+                let newH = (screenW*h)/w
         
-        UIView.animate(withDuration: 0.4, delay: 0.0,
-                       options: UIView.AnimationOptions.curveEaseOut, animations: {
-            self.detailsImgView.frame = CGRect(x: 0, y: self.screenH,
-                                               width: self.screenW,
-                                               height: newH)
-            self.detailsView.frame = CGRect(x: 0, y: newH+self.screenH,
-                                            width: self.screenW,
-                                            height: self.screenH - newH)
-            self.dismissButton.frame = CGRect(x: self.screenW/2-35,
-                                              y: newH+self.screenH-35,
-                                              width: 70, height: 94)
-        }, completion: {(finished:Bool) in
-            self.detailsImgView.isHidden = true
-            self.animatePin()
-        })
+//                curPin.isEnabled = true
+                
+                UIView.animate(withDuration: 0.4, delay: 0.0,
+                               options: UIView.AnimationOptions.curveEaseOut, animations: {
+                    self.detailsImgView.frame = CGRect(x: 0, y: self.screenH,
+                                                       width: self.screenW,
+                                                       height: newH)
+                    self.detailsView.frame = CGRect(x: 0, y: newH+self.screenH,
+                                                    width: self.screenW,
+                                                    height: self.screenH - newH)
+                                
+                    let homeFrame = CGRect(x: self.screenW/2-35,
+                                           y: newH+self.screenH-35,
+                                           width: 70, height: 94)
+                    self.applyHomeFrame(frame: homeFrame)
+                }, completion: {(finished:Bool) in
+                    self.detailsImgView.isHidden = true
+                    self.animatePin()
+                })
+            }
+        }
     }
     
     func animatePin() {
         UIView.animate(withDuration: 0.25, delay: 0.0,
                        options: UIView.AnimationOptions.curveEaseOut, animations: {
-            self.dismissButton.frame = CGRect(x: self.screenW/2-35,
-                                              y: self.screenH-104,
-                                              width: 70, height: 94)
+            let frame = CGRect(x: self.screenW/2-35,
+                               y: self.screenH-114,
+                               width: 70, height: 94)
+            self.applyHomeFrame(frame: frame)
         }, completion: {(finished:Bool) in
             self.bounce(obj: self.dismissButton, up: -10, left: 0)
+            self.bounce(obj: self.dismissButtonColor, up: -10, left: 0)
         })
     }
-
+    
+/****************************************************************************************************************/
+    
+    func applyHomeFrame(frame: CGRect) {
+        dismissButton.frame = frame
+        dismissButtonColor.frame = frame
+    }
+    
     func bounce(obj: UIView, up: CGFloat, left: CGFloat) {
         let curX = obj.frame.origin.x
         let curY = obj.frame.origin.y
@@ -415,11 +425,45 @@ extension ViewController: MKMapViewDelegate {
         
         UIView.animate(withDuration: 0.15, animations: {
             obj.frame = CGRect(x: curX-left, y: curY-up,
-                                              width: curW, height: curH)
+                               width: curW, height: curH)
         }, completion: {(finished:Bool) in
             UIView.animate(withDuration: 0.15, animations: {
                 obj.frame = CGRect(x: curX, y: curY,
-                                                  width: curW, height: curH)
+                                   width: curW, height: curH)
+            })
+        })
+    }
+    
+    func fade(obj: UIView, duration: Double) {
+        if obj.alpha == 0 {
+            UIView.animate(withDuration: duration, animations: { obj.alpha = 1 })
+        } else {
+            UIView.animate(withDuration: duration, animations: { obj.alpha = 0 })
+        }
+    }
+    
+    func rainbow(view: UIView, duration: Double) {
+        UIView.animate(withDuration: duration, animations: {
+            view.tintColor = UIColor(red: 1, green: 1, blue: 0, alpha: 1.0)
+        }, completion: {(finished:Bool) in
+            UIView.animate(withDuration: duration, animations: {
+                view.tintColor = UIColor(red: 0, green: 1, blue: 0, alpha: 1.0)
+            }, completion: {(finished:Bool) in
+                UIView.animate(withDuration: duration, animations: {
+                    view.tintColor = UIColor(red: 0, green: 1, blue: 1, alpha: 1.0)
+                }, completion: {(finished:Bool) in
+                    UIView.animate(withDuration: duration, animations: {
+                        view.tintColor = UIColor(red: 0, green: 0, blue: 1, alpha: 1.0)
+                    }, completion: {(finished:Bool) in
+                        UIView.animate(withDuration: duration, animations: {
+                            view.tintColor = UIColor(red: 1, green: 0, blue: 1, alpha: 1.0)
+                        }, completion: {(finished:Bool) in
+                            UIView.animate(withDuration: duration, animations: {
+                                view.tintColor = UIColor(red: 1, green: 0, blue: 0, alpha: 1.0)
+                            })
+                        })
+                    })
+                })
             })
         })
     }
@@ -492,14 +536,13 @@ extension UIView {
  - If region is your location, the button will be blue,
    otherwise gray
  - "Home" pin does tiny animation evertime its clicked
- - Dumb animation when home pin is clicked too many times
+  - Deselect annotations when panning
  */
 
 /*      Issues:
  - Image gets completely blown out when enlarged
  - Trigger image after animation complete
  - Disable pin while image is active
- - Deselect annotations when panning
  - Blue dot disappeared
  - Both tall and long images are bad for us, in both the
    map view and the detail view as the become too big or
@@ -523,7 +566,7 @@ extension UIView {
    will hide behind the drawer and swiping up again
    will hide the drawer and show the pin again
  - Swiping right and left on the image in the detail
- - view will show more images
+   view will show more images
  - Swiping right and left on the text of the detail
    view will show more pin detail views
  - Consider max of 5:4 or 4:5 image ratio, anything
