@@ -13,18 +13,20 @@ import CoreLocation
 class ViewController: UIViewController {
     @IBOutlet weak var mapView: MKMapView!
     
-    let detailsImgView = UIImageView()
-    let detailsView = UIView()
     let homeButtonColor = UIImageView()
     let homeButton = UIButton()
+    
     let currentLocationButton = UIButton()
+    
+    var menuButtons = [UIButton]()
+    var menuOpen = false
     let newPinButton = UIButton()
     let cameraButton = UIButton()
     let profileButton = UIButton()
     let settingsButton = UIButton()
     
-    var menuButtons = [UIButton]()
-    var menuOpen = false
+    let detailsImgView = UIImageView()
+    let detailsView = UIView()
     
     let locationManager = CLLocationManager()
     let regionInMeters: Double = 10000
@@ -52,10 +54,6 @@ class ViewController: UIViewController {
         newhomeButton()
         newCurrentLocationButton()
         newMenu()
-        rainbow(views: homeButtonColor, newPinButton,
-                       cameraButton, profileButton,
-                       settingsButton,
-                duration: 2)
     }
     
     func centerViewOnUserLocation() {
@@ -157,21 +155,21 @@ extension ViewController: MKMapViewDelegate {
     func mapView(_ mapView: MKMapView, regionWillChangeAnimated animated: Bool) {
         // make image hidden if the user isn't going to click on it for detail view
         detailsImgView.isHidden = true
-        
+        // deselect annotations if panning
+//        curPin.isSelected = false
+        // 99.999999999% chance user did not pan to exact current location, so grey it out
         self.currentLocationButton.tintColor = .lightGray
-        
-        // attempt to deselect annotations if panning
-        curPin.isSelected = false
     }
     
     func mapView(_ mapView: MKMapView, regionDidChangeAnimated animated: Bool) {
         
     }
     
+    // when pin is clicked, the region is zoomed and centered to it, then clickable image is
+    // place on top of the image
     func mapView(_ mapView: MKMapView, didSelect view: MKAnnotationView) {
-        print("The annotation was selected: \(String(describing: view.annotation?.title))")
-        
         if let pinLoc = view.annotation?.coordinate {
+            curPin = view
             let region = MKCoordinateRegion.init(center: pinLoc,
                                                  latitudinalMeters: mapView.region.center.latitude*50,
                                                  longitudinalMeters: mapView.region.center.latitude*50)
@@ -285,7 +283,7 @@ extension ViewController: MKMapViewDelegate {
                                width: 70, height: 94)
         self.applyHomeFrame(frame: homeFrame)
         
-        homeButton.addTarget(self, action: #selector(pinButtonClicked),
+        homeButton.addTarget(self, action: #selector(homeButtonClicked),
                                 for: .touchUpInside)
         
         self.view.addSubview(homeButtonColor)
@@ -387,7 +385,6 @@ extension ViewController: MKMapViewDelegate {
                                               width: w, height: h)
                 detailsImgView.image = pin.image
                 
-                curPin = pin
                 self.view.addSubview(detailsImgView)
                 
         //        this will animate details view immediately on tap, rather than tap again
@@ -424,14 +421,15 @@ extension ViewController: MKMapViewDelegate {
                                            width: 70, height: 94)
                     self.applyHomeFrame(frame: homeFrame)
                     
-                    self.bounce(obj: self.detailsImgView, up: -5, left: 0)
+                    self.bounce(objs: self.detailsImgView, up: -5, left: 0)
                     UIView.animate(withDuration: 0.3, delay: 0.0,
                                    options: UIView.AnimationOptions.curveEaseOut, animations: {
-                        self.translate(obj: self.detailsView, up: -self.screenH, left: 0)
+                        self.translate(objs: self.detailsView, up: -self.screenH, left: 0)
                     }, completion: {(finished:Bool) in
-                        self.fade(obj: self.homeButton, duration: 0.5)
-                        self.fade(obj: self.homeButtonColor, duration: 0.5)
-                        self.bounce(obj: self.detailsView, up: 10, left: 0)
+                        self.fade(objs: self.homeButton,
+                                        self.homeButtonColor,
+                                  duration: 0.5)
+                        self.bounce(objs: self.detailsView, up: 10, left: 0)
                     })
                 })
             }
@@ -439,51 +437,23 @@ extension ViewController: MKMapViewDelegate {
     }
     
     @objc func dismissDetailsView() {
-        if let w = detailsImgView.image?.size.width {
-            if let h = detailsImgView.image?.size.height {
-                let newH = (screenW*h)/w
+//        curPin.isEnabled = true
+//        curPin.isHidden = false
         
-//                curPin.isEnabled = true
-//                curPin.isHidden = false
-                
-                UIView.animate(withDuration: 0.4, delay: 0.0,
-                               options: UIView.AnimationOptions.curveEaseOut, animations: {
-                    self.translate(obj: self.detailsImgView, up: -self.screenH, left: 0)
-                    self.translate(obj: self.detailsView, up: -self.screenH, left: 0)
-                                
-                    let homeFrame = CGRect(x: self.screenW/2-35,
-                                           y: newH+self.screenH-35,
-                                           width: 70, height: 94)
-                    self.applyHomeFrame(frame: homeFrame)
-                }, completion: {(finished:Bool) in
-                    self.detailsImgView.isHidden = true
-                    self.animatePin()
-                })
-            }
-        }
+        UIView.animate(withDuration: 0.4, delay: 0.0,
+                       options: UIView.AnimationOptions.curveEaseOut, animations: {
+            self.translate(objs: self.detailsImgView,
+                                 self.detailsView,
+                                 self.homeButton,
+                                 self.homeButtonColor,
+                           up: -self.screenH, left: 0)
+        }, completion: {(finished:Bool) in
+            self.detailsImgView.isHidden = true
+            self.animateHome()
+        })
     }
     
-    @objc func pinButtonClicked() {
-        if homeButton.frame.origin.y < screenH-114 {
-            dismissDetailsView()
-        } else {
-            bounce(obj: homeButton, up: 10, left: 0)
-            bounce(obj: homeButtonColor, up: 10, left: 0)
-            if menuOpen {
-                dismissMenu()
-                return
-            } else {
-                animateMenu()
-            }
-        }
-        rainbow(views: homeButtonColor, newPinButton,
-                cameraButton, profileButton,
-                settingsButton,
-                duration: 2)
-    }
-    
-    
-    func animatePin() {
+    func animateHome() {
         UIView.animate(withDuration: 0.25, delay: 0.0,
                        options: UIView.AnimationOptions.curveEaseOut, animations: {
             let frame = CGRect(x: self.screenW/2-35,
@@ -491,8 +461,8 @@ extension ViewController: MKMapViewDelegate {
                                width: 70, height: 94)
             self.applyHomeFrame(frame: frame)
         }, completion: {(finished:Bool) in
-            self.bounce(obj: self.homeButton, up: -10, left: 0)
-            self.bounce(obj: self.homeButtonColor, up: -10, left: 0)
+            self.bounce(objs: self.homeButton, self.homeButtonColor,
+                        up: -10, left: 0)
         })
     }
     
@@ -524,52 +494,83 @@ extension ViewController: MKMapViewDelegate {
         menuOpen = false
     }
     
+    @objc func homeButtonClicked() {
+        if homeButton.frame.origin.y < screenH-114 {
+            dismissDetailsView()
+        } else {
+            bounce(objs: homeButton, homeButtonColor,
+                   up: 10, left: 0)
+            if menuOpen {
+                dismissMenu()
+                return
+            } else {
+                animateMenu()
+            }
+        }
+        
+        rainbow(views: homeButtonColor, newPinButton,
+                cameraButton, profileButton,
+                settingsButton,
+                duration: 2)
+    }
+    
     @objc func menuButtonClicked() {
         dismissMenu()
     }
     
 /****************************************************************************************************************/
     
+    // applies a given frame to home button and border
     func applyHomeFrame(frame: CGRect) {
         homeButton.frame = frame
         homeButtonColor.frame = frame
     }
     
-    func translate(obj: UIView, up: CGFloat, left: CGFloat) {
-        let curX = obj.frame.origin.x
-        let curY = obj.frame.origin.y
-        let curW = obj.frame.size.width
-        let curH = obj.frame.size.height
-        
-        obj.frame = CGRect(x: curX-left, y: curY-up,
-                           width: curW, height: curH)
-    }
-    
-    func bounce(obj: UIView, up: CGFloat, left: CGFloat) {
-        let curX = obj.frame.origin.x
-        let curY = obj.frame.origin.y
-        let curW = obj.frame.size.width
-        let curH = obj.frame.size.height
-        
-        UIView.animate(withDuration: 0.15, animations: {
+    // translates an object on the screen
+    func translate(objs: UIView..., up: CGFloat, left: CGFloat) {
+        for obj in objs {
+            let curX = obj.frame.origin.x
+            let curY = obj.frame.origin.y
+            let curW = obj.frame.size.width
+            let curH = obj.frame.size.height
+            
             obj.frame = CGRect(x: curX-left, y: curY-up,
                                width: curW, height: curH)
-        }, completion: {(finished:Bool) in
-            UIView.animate(withDuration: 0.15, animations: {
-                obj.frame = CGRect(x: curX, y: curY,
-                                   width: curW, height: curH)
-            })
-        })
-    }
-    
-    func fade(obj: UIView, duration: Double) {
-        if obj.alpha == 0 {
-            UIView.animate(withDuration: duration, animations: { obj.alpha = 1 })
-        } else {
-            UIView.animate(withDuration: duration, animations: { obj.alpha = 0 })
         }
     }
     
+    // bounce animation in provided direction for a given object
+    func bounce(objs: UIView..., up: CGFloat, left: CGFloat) {
+        for obj in objs {
+            let curX = obj.frame.origin.x
+            let curY = obj.frame.origin.y
+            let curW = obj.frame.size.width
+            let curH = obj.frame.size.height
+        
+            UIView.animate(withDuration: 0.15, animations: {
+                obj.frame = CGRect(x: curX-left, y: curY-up,
+                                   width: curW, height: curH)
+            }, completion: {(finished:Bool) in
+                UIView.animate(withDuration: 0.15, animations: {
+                    obj.frame = CGRect(x: curX, y: curY,
+                                       width: curW, height: curH)
+                })
+            })
+        }
+    }
+    
+    // fades an object in or out depending on current opacity
+    func fade(objs: UIView..., duration: Double) {
+        for obj in objs {
+            if obj.alpha == 0 {
+                UIView.animate(withDuration: duration, animations: { obj.alpha = 1 })
+            } else {
+                UIView.animate(withDuration: duration, animations: { obj.alpha = 0 })
+            }
+        }
+    }
+    
+    // takes views and applies rainbow tint (starting at red) over a provided duration
     func rainbow(views: UIView..., duration: Double) {
         for view in views {
             UIView.animate(withDuration: duration, animations: {
@@ -602,6 +603,7 @@ extension ViewController: MKMapViewDelegate {
 /****************************************************************************************************************/
 
 extension UIImage {
+    // stolen from stackexchange, modified to use different inputs
     func resize(x: CGFloat, y: CGFloat, w: CGFloat, h: CGFloat) -> UIImage {
         let targetSize = CGSize.init(width: w, height: h)
         return UIGraphicsImageRenderer(size:targetSize).image { _ in
@@ -614,6 +616,7 @@ extension UIImage {
 /****************************************************************************************************************/
 
 extension UIView {
+    // stolen from some youtuber, modified to assign multiple constraints
     func addConstraintsWithFormat(hor: String, vert: String, views: UIView...) {
         var viewsDictionary = [String: UIView]()
         for (index, view) in views.enumerated() {
