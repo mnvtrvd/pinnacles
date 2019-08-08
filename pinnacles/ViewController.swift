@@ -20,7 +20,7 @@ class ViewController: UIViewController {
     
     var menuButtons = [UIButton]()
     var menuOpen = false
-    let newPinButton = UIButton()
+    let placePinButton = UIButton()
     let cameraButton = UIButton()
     let profileButton = UIButton()
     let settingsButton = UIButton()
@@ -291,19 +291,19 @@ extension ViewController: MKMapViewDelegate {
         self.view.addSubview(homeButton)
     }
     
-    func newNewPinButton() {
-        newPinButton.setBackgroundImage(UIImage(named: "circle-outline"), for: UIControl.State.normal)
-        newPinButton.alpha = 0.0
-        newPinButton.tintColor = .red
+    func newPlacePinButton() {
+        placePinButton.setBackgroundImage(UIImage(named: "circle-outline"), for: UIControl.State.normal)
+        placePinButton.alpha = 0.0
+        placePinButton.tintColor = .red
         
-        newPinButton.frame = CGRect(x: screenW/2-15, y: screenH-94,
+        placePinButton.frame = CGRect(x: screenW/2-15, y: screenH-94,
                                     width: 30, height: 30)
 
-        newPinButton.addTarget(self, action: #selector(menuButtonClicked),
+        placePinButton.addTarget(self, action: #selector(menuButtonClicked),
                              for: .touchUpInside)
         
-        menuButtons.append(newPinButton)
-        self.view.addSubview(newPinButton)
+        menuButtons.append(placePinButton)
+        self.view.addSubview(placePinButton)
     }
 
     func newCameraButton() {
@@ -352,7 +352,7 @@ extension ViewController: MKMapViewDelegate {
     }
     
     func newMenu() {
-        newNewPinButton()
+        newPlacePinButton()
         newCameraButton()
         newProfileButton()
         newSettingsButton()
@@ -375,6 +375,7 @@ extension ViewController: MKMapViewDelegate {
     
     @objc func centerOnLocation() {
         centerViewOnUserLocation()
+        curPin.isSelected = false
     }
 
     func expandImg(pin: MKAnnotationView) {
@@ -398,11 +399,12 @@ extension ViewController: MKMapViewDelegate {
     
     @objc func animateDetailsView() {
         dismissMenu()
+        mapView.isUserInteractionEnabled = false
+        curPin.isSelected = false
         
         if let w = detailsImgView.image?.size.width {
             if let h = detailsImgView.image?.size.height {
                 let newH = (screenW*h)/w
-//                curPin.isEnabled = false
 //                curPin.isHidden = true
 
                 UIView.animate(withDuration: 0.3, delay: 0.0,
@@ -438,7 +440,6 @@ extension ViewController: MKMapViewDelegate {
     }
     
     @objc func dismissDetailsView() {
-//        curPin.isEnabled = true
 //        curPin.isHidden = false
         
         UIView.animate(withDuration: 0.4, delay: 0.0,
@@ -452,6 +453,8 @@ extension ViewController: MKMapViewDelegate {
             self.detailsImgView.isHidden = true
             self.animateHome()
         })
+        
+        mapView.isUserInteractionEnabled = true
     }
     
     func animateHome() {
@@ -509,7 +512,7 @@ extension ViewController: MKMapViewDelegate {
             }
         }
         
-        rainbow(views: homeButtonColor, newPinButton,
+        rainbow(views: homeButtonColor, placePinButton,
                 cameraButton, profileButton,
                 settingsButton,
                 duration: 2)
@@ -641,7 +644,7 @@ extension UIView {
 
 /****************************************************************************************************************/
 
-/*      Features added:
+/*      List of Current Features:
  - Basic map kit and location initializations
  - When app is open, it will automatically center on the
    user's location
@@ -678,6 +681,7 @@ extension UIView {
  - Menu is versatile in that if the number of menu
    buttons changes, the spacing and position will match
  - If any menu button is clicked, the menu will close
+ - User cannot interact with mapView when in details view
  */
 
 /*      Issues:
