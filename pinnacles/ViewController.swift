@@ -20,6 +20,7 @@ class ViewController: UIViewController {
     
     var menuButtons = [UIButton]()
     var menuOpen = false
+    var menuItemOpen = false
     let placePinButton = UIButton()
     let cameraButton = UIButton()
     let profileButton = UIButton()
@@ -299,7 +300,7 @@ extension ViewController: MKMapViewDelegate {
         placePinButton.frame = CGRect(x: screenW/2-15, y: screenH-94,
                                     width: 30, height: 30)
 
-        placePinButton.addTarget(self, action: #selector(menuButtonClicked),
+        placePinButton.addTarget(self, action: #selector(pinMenuButtonClicked),
                              for: .touchUpInside)
         
         menuButtons.append(placePinButton)
@@ -314,7 +315,7 @@ extension ViewController: MKMapViewDelegate {
         cameraButton.frame = CGRect(x: screenW/2-15, y: screenH-94,
                                     width: 30, height: 30)
         
-        cameraButton.addTarget(self, action: #selector(menuButtonClicked),
+        cameraButton.addTarget(self, action: #selector(camMenuButtonClicked),
                              for: .touchUpInside)
         
         menuButtons.append(cameraButton)
@@ -329,7 +330,7 @@ extension ViewController: MKMapViewDelegate {
         profileButton.frame = CGRect(x: screenW/2-15, y: screenH-94,
                                     width: 30, height: 30)
 
-        profileButton.addTarget(self, action: #selector(menuButtonClicked),
+        profileButton.addTarget(self, action: #selector(profMenuButtonClicked),
                              for: .touchUpInside)
         
         menuButtons.append(profileButton)
@@ -344,7 +345,7 @@ extension ViewController: MKMapViewDelegate {
         settingsButton.frame = CGRect(x: screenW/2-15, y: screenH-94,
                                     width: 30, height: 30)
         
-        settingsButton.addTarget(self, action: #selector(menuButtonClicked),
+        settingsButton.addTarget(self, action: #selector(settingsMenuButtonClicked),
                              for: .touchUpInside)
         
         menuButtons.append(settingsButton)
@@ -352,6 +353,7 @@ extension ViewController: MKMapViewDelegate {
     }
     
     func newMenu() {
+        menuButtons.removeAll()
         newPlacePinButton()
         newCameraButton()
         newProfileButton()
@@ -398,7 +400,7 @@ extension ViewController: MKMapViewDelegate {
 /****************************************************************************************************************/
     
     @objc func animateDetailsView() {
-        dismissMenu()
+        dismissMenu(except: UIButton())
         mapView.isUserInteractionEnabled = false
         curPin.isSelected = false
         
@@ -487,17 +489,54 @@ extension ViewController: MKMapViewDelegate {
         menuOpen = true
     }
     
-    func dismissMenu() {
+    func dismissMenu(except: UIButton) {
         for button in menuButtons {
-            UIView.animate(withDuration: 0.25, animations: {
-                button.alpha = 0.0
-                button.frame = CGRect(x: self.screenW/2-15, y: self.screenH-94,
-                                      width: 30, height: 30)
-            })
+            if (button != except) {
+                UIView.animate(withDuration: 0.25, animations: {
+                    button.alpha = 0.0
+                    button.frame = CGRect(x: self.screenW/2-15, y: self.screenH-94,
+                                          width: 30, height: 30)
+                })
+            }
         }
         menuOpen = false
     }
     
+    func animateMenuItem(item: UIButton) {
+        menuItemOpen = true
+//        UIView.animate(withDuration: 0.5, animations: {
+//            item.frame = CGRect(x: self.screenW/2-50,
+//                                y: self.screenH/2-50,
+//                                width: 100, height: 100)
+//        }, completion: {(finished:Bool) in
+            UIView.animate(withDuration: 0.1, animations: {
+                item.tintColor = .white
+                item.setBackgroundImage(UIImage(named: "circle-fill"), for: UIControl.State.normal)
+            }, completion: {(finished:Bool) in
+                UIView.animate(withDuration: 0.5, animations: {
+                    item.frame = CGRect(x: -750, y: -500,
+                                        width: 2000, height: 2000)
+                })
+            })
+//        })
+    }
+    
+    func dismissMenuItem(item: UIButton) {
+        UIView.animate(withDuration: 0.5, animations: {
+            item.frame = CGRect(x: self.screenW/2-15, y: self.screenH-94,
+                                width: 30, height: 30)
+//            item.setBackgroundImage(UIImage(named: "circle-outline"), for: UIControl.State.normal)
+            item.tintColor = .white
+        }, completion: {(finished:Bool) in
+            UIView.animate(withDuration: 0.5, animations: {
+                item.alpha = 0.0
+            })
+        })
+        menuItemOpen = false
+    }
+    
+/****************************************************************************************************************/
+
     @objc func homeButtonClicked() {
         if homeButton.frame.origin.y < screenH-114 {
             dismissDetailsView()
@@ -505,9 +544,10 @@ extension ViewController: MKMapViewDelegate {
             bounce(objs: homeButton, homeButtonColor,
                    up: 10, left: 0)
             if menuOpen {
-                dismissMenu()
+                dismissMenu(except: UIButton())
                 return
             } else {
+                newMenu()
                 animateMenu()
             }
         }
@@ -515,11 +555,51 @@ extension ViewController: MKMapViewDelegate {
         rainbow(views: homeButtonColor, placePinButton,
                 cameraButton, profileButton,
                 settingsButton,
-                duration: 2)
+                duration: 5)
+    }
+
+    @objc func pinMenuButtonClicked() {
+        let exception = placePinButton
+        dismissMenu(except: exception)
+        if (!menuItemOpen) {
+            animateMenuItem(item: exception)
+        }
+        else {
+            dismissMenuItem(item: exception)
+        }
     }
     
-    @objc func menuButtonClicked() {
-        dismissMenu()
+    @objc func camMenuButtonClicked() {
+        let exception = cameraButton
+        dismissMenu(except: exception)
+        if (!menuItemOpen) {
+            animateMenuItem(item: exception)
+        }
+        else {
+            dismissMenuItem(item: exception)
+        }
+    }
+    
+    @objc func profMenuButtonClicked() {
+        let exception = profileButton
+        dismissMenu(except: exception)
+        if (!menuItemOpen) {
+            animateMenuItem(item: exception)
+        }
+        else {
+            dismissMenuItem(item: exception)
+        }
+    }
+    
+    @objc func settingsMenuButtonClicked() {
+        let exception = settingsButton
+        dismissMenu(except: exception)
+        if (!menuItemOpen) {
+            animateMenuItem(item: exception)
+        }
+        else {
+            dismissMenuItem(item: exception)
+        }
     }
     
 /****************************************************************************************************************/
