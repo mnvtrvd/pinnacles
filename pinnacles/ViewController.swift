@@ -26,6 +26,10 @@ class ViewController: UIViewController {
     let profileButton = UIButton()
     let settingsButton = UIButton()
     
+//    let cameraButton = UIButton()
+    var popupOpen = false
+    let popupView = UIView()
+    
     let detailsImgView = UIImageView()
     let detailsView = UIView()
     
@@ -360,6 +364,29 @@ extension ViewController: MKMapViewDelegate {
         newSettingsButton()
     }
     
+    func newPopupView() {
+        popupView.backgroundColor = .white
+        popupView.alpha = 0.0
+        popupView.frame = CGRect(x: 0, y: 0, width: screenW, height: screenH)
+        
+        self.view.addSubview(popupView)
+        self.fade(objs: self.homeButton,
+                  self.homeButtonColor,
+                  duration: 0.5)
+        newhomeButton()
+        self.fade(objs: self.homeButton,
+                  self.homeButtonColor,
+                  duration: 0.5)
+        
+        popupOpen = true
+    }
+    
+    func populatePopup(button: UIButton) {
+        if (button == profileButton) {
+            
+        }
+    }
+    
 /****************************************************************************************************************/
     
     func resizeImg(img: UIImage, small: Bool) -> UIImage {
@@ -510,27 +537,38 @@ extension ViewController: MKMapViewDelegate {
 //                                width: 100, height: 100)
 //        }, completion: {(finished:Bool) in
             UIView.animate(withDuration: 0.1, animations: {
-                item.tintColor = .white
                 item.setBackgroundImage(UIImage(named: "circle-fill"), for: UIControl.State.normal)
+                item.tintColor = .white
             }, completion: {(finished:Bool) in
                 UIView.animate(withDuration: 0.5, animations: {
                     item.frame = CGRect(x: -750, y: -500,
                                         width: 2000, height: 2000)
+                }, completion: {(finished:Bool) in
+                    self.newPopupView()
+                    self.fade(objs: self.popupView, duration: 0.5)
                 })
             })
 //        })
     }
     
-    func dismissMenuItem(item: UIButton) {
+    func dismissMenuItem() {
         UIView.animate(withDuration: 0.5, animations: {
-            item.frame = CGRect(x: self.screenW/2-15, y: self.screenH-94,
-                                width: 30, height: 30)
-//            item.setBackgroundImage(UIImage(named: "circle-outline"), for: UIControl.State.normal)
-            item.tintColor = .white
+            self.fade(objs: self.popupView, duration: 0.5)
         }, completion: {(finished:Bool) in
-            UIView.animate(withDuration: 0.5, animations: {
-                item.alpha = 0.0
-            })
+            for item in self.menuButtons {
+                if item.alpha > 0 {
+                    UIView.animate(withDuration: 0.5, animations: {
+                        item.frame = CGRect(x: self.screenW/2-15, y: self.screenH-94,
+                                            width: 30, height: 30)
+            //            item.setBackgroundImage(UIImage(named: "circle-outline"), for: UIControl.State.normal)
+                        item.tintColor = .white
+                    }, completion: {(finished:Bool) in
+                        UIView.animate(withDuration: 0.5, animations: {
+                            item.alpha = 0.0
+                        })
+                    })
+                }
+            }
         })
         menuItemOpen = false
     }
@@ -546,6 +584,9 @@ extension ViewController: MKMapViewDelegate {
             if menuOpen {
                 dismissMenu(except: UIButton())
                 return
+            } else if popupOpen {
+                dismissMenuItem()
+                popupOpen = false
             } else {
                 newMenu()
                 animateMenu()
@@ -565,7 +606,7 @@ extension ViewController: MKMapViewDelegate {
             animateMenuItem(item: exception)
         }
         else {
-            dismissMenuItem(item: exception)
+            dismissMenuItem()
         }
     }
     
@@ -576,7 +617,7 @@ extension ViewController: MKMapViewDelegate {
             animateMenuItem(item: exception)
         }
         else {
-            dismissMenuItem(item: exception)
+            dismissMenuItem()
         }
     }
     
@@ -587,7 +628,7 @@ extension ViewController: MKMapViewDelegate {
             animateMenuItem(item: exception)
         }
         else {
-            dismissMenuItem(item: exception)
+            dismissMenuItem()
         }
     }
     
@@ -598,7 +639,7 @@ extension ViewController: MKMapViewDelegate {
             animateMenuItem(item: exception)
         }
         else {
-            dismissMenuItem(item: exception)
+            dismissMenuItem()
         }
     }
     
